@@ -1,4 +1,4 @@
-#LaptopWebScraper
+# LaptopWebScraper
 Scrapes ksp.co.il for laptop specifications, and outputs a csv file.
 
 This script uses:
