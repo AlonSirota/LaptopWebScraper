@@ -17,7 +17,7 @@ class PrioritizedJob:
     HIGH_PRIORITY = 1
     LOW_PRIOTITY = 2
 
-    # Only compare priority when comparing two instances if this class
+    # Only compare priority when comparing two instances of this class
     priority: int
     future: asyncio.Future = field(compare=False)
     function: typing.Callable = field(compare=False)
