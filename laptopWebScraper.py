@@ -8,8 +8,9 @@ import aiohttp
 from bs4 import BeautifulSoup, SoupStrainer
 from PrioritizedJob import PrioritizedJob
 import sys
+from Url import Url
 
-myHeaders = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+HTTP_HEADER = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
              'Accept-Encoding': 'gzip, deflate, br',
              'Accept-Language': 'en,en-GB;q=0.9,en-US;q=0.8',
              'Cache-Control': 'max-age=0',
@@ -24,15 +25,9 @@ myHeaders = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,im
              '(KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36'}
 RELEVANT_TITLES = ['אחריות', 'דגם', 'זיכרון',
                    'כונן קשיח', 'משקל', 'סוללה', 'מעבד', 'מאיץ גרפי']
-NUMBER_OF_CATALOG_PAGES_TO_SCRAPE = 1
-BASE_URL = 'https://ksp.co.il/'
-CATALOG_URL = BASE_URL + \
-    '?select=.268..271..211..5870..2640..347..1798..4517..442..2639.&kg=&list=' # after the '=' should come the page number
-POST_PAGE_NUMBER_SUFFIX = \
-    """&sort=2&glist=0&uin=0&txt_search=&buy=&minprice=0&maxprice=0&intersect=&rintersect=&store_real="""
+NUMBER_OF_CATALOG_PAGES_TO_SCRAPE = 2
 
-
-
+URL = Url("https://ksp.co.il/?select=.268..271..211..5870..2640..347..1798..4517..442..2639.&kg=&list=&sort=2&glist=0&uin=0&txt_search=&buy=&minprice=0&maxprice=0&intersect=&rintersect=&store_real=")
 
 def run_with_process_pool(executor, function, *args) -> Coroutine[concurrent.futures.Executor, Callable, List[Any]]:
     """Uses a concurrent.futures.ProcessPoolExecuter to run the parameter 'function'
@@ -61,7 +56,7 @@ async def get_html_from_URL(URL, session) -> Tuple[str, str]:
     Returns:
         typing.Tuple[str, str]: (html, URL)
     """
-    async with session.get(URL, headers=myHeaders) as resp:
+    async with session.get(URL, headers=HTTP_HEADER) as resp:
         html = await resp.text()
         assert resp.status == 200
         return (html, URL)
@@ -121,11 +116,11 @@ async def scan_catalog(catalog_link, multiprocessing_job_queue, http_session):
     laptop_links = await job.future
 
     get_laptop_html_tasks = []
-    for url in laptop_links:
+    for path in laptop_links:
         # request laptop's html
         get_laptop_html_tasks.append(
             asyncio.create_task(
-                get_html_from_URL(BASE_URL + url, http_session)))
+                get_html_from_URL(URL.get_url(path), http_session)))
 
     laptops_specs_futures = []
     for get_html_task in asyncio.as_completed(get_laptop_html_tasks):
@@ -269,7 +264,7 @@ def get_catalog_page_url(page_number: int) -> str:
     Returns:
         str: The numbered page's url
     """
-    return CATALOG_URL + str(page_number) + POST_PAGE_NUMBER_SUFFIX
+    return URL.get_page_url(page_number)
 
 async def start_scanning_catalogs_async(job_queue, session):
     """Initiate async tasks of scan_catalog(...) for multiple urls
